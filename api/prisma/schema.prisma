@@ -1,0 +1,54 @@
+// Fonte do schema do Pomo. O SQL que o Prisma não modela (CHECK de consentimento,
+// pg_trgm, FK para auth.users, RLS, função de busca) fica em prisma/migrations/*/migration.sql.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Profile {
+  userId          String    @id @map("user_id") @db.Uuid
+  goals           String[]  @default([])
+  allergens       String[]  @default([])
+  restrictions    String[]  @default([])
+  lessSugar       Boolean   @default(false) @map("less_sugar")
+  lessSodium      Boolean   @default(false) @map("less_sodium")
+  healthConsentAt DateTime? @map("health_consent_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("profiles")
+}
+
+model Product {
+  barcode         String        @id
+  name            String
+  brand           String?
+  category        String?
+  isLiquid        Boolean       @default(false) @map("is_liquid")
+  nutrition       Json          @default("{}")
+  ingredientsText String?       @map("ingredients_text")
+  allergensTags   String[]      @default([]) @map("allergens_tags")
+  tracesTags      String[]      @default([]) @map("traces_tags")
+  additivesTags   String[]      @default([]) @map("additives_tags")
+  source          String
+  verified        Boolean       @default(false)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  scans           ScanHistory[]
+
+  @@map("products")
+}
+
+model ScanHistory {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  barcode   String
+  scannedAt DateTime @default(now()) @map("scanned_at") @db.Timestamptz(6)
+  product   Product  @relation(fields: [barcode], references: [barcode])
+
+  @@index([userId, scannedAt(sort: Desc)])
+  @@map("scan_history")
+}
