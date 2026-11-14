@@ -109,14 +109,14 @@ O perfil vem **antes do primeiro scan**: objetivo, alergias e restrições em po
 - **Produtos enviados por usuários** *(decisão do Claude)*: um produto criado por foto fica com status **"não verificado"**. Ele já aparece para todos, mas os alertas de alergia vêm com o aviso "dados enviados por usuário, confira o rótulo". O produto passa a **"verificado"** quando uma segunda pessoa confirma dados iguais ou quando um administrador o aprova numa fila simples de revisão. Só produtos verificados são enviados ao OFF e entram como alternativas.
 
 ### 6.4 IA (Gemini)
-- Chamado **somente pelo backend** (Supabase Edge Functions); a chave nunca fica no app.
+- Chamado **somente pelo backend** (API Fastify); a chave nunca fica no app.
 - O backend aplica os limites do plano grátis e registra o uso por usuário, para acompanhar o custo.
 - Modelo: família Gemini Flash para as tarefas do dia a dia (custo baixo); o modelo exato fica a cargo de quem constrói.
 - Respostas sobre o mesmo produto e o mesmo perfil podem ser cacheadas para reduzir o custo.
 
 ### 6.5 Stack
 - **App**: React Native com Expo (EAS Build e Submit).
-- **Backend**: Supabase (Postgres, Auth, Storage para fotos de rótulo, Edge Functions).
+- **Backend** *(rev. 2026-11-14)*: API Node.js + Fastify + Prisma sobre Supabase (Postgres, Auth, Storage para fotos de rótulo). Sem Edge Functions; a fórmula da nota fica só na API.
 - **Assinaturas**: RevenueCat sobre o Google Play Billing.
 - **Mascote** *(decisão do Claude)*: **SVG animado em código** (react-native-svg + react-native-reanimated), e não Rive. O Rive precisa de um animador trabalhando no editor dele, e o projeto não tem designer. O SVG em código pode ser criado e ajustado direto no projeto e atende o pedido original de animações em SVG. Uma máquina de estados simples em código controla piscar, olhos e expressões.
 
