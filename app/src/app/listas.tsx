@@ -1,8 +1,8 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { api } from '../api/client';
+import { api, ApiError } from '../api/client';
 import { ExplainCard } from '../components/ExplainCard';
 import { Icon } from '../components/Icon';
 import { ProductRow } from '../components/ProductRow';
@@ -20,9 +20,14 @@ export default function Listas() {
   const items = list.data?.items ?? [];
   const swaps = items.filter((i) => i.suggestion);
 
+  const fail = (e: unknown) =>
+    Alert.alert('Não foi possível atualizar a lista', apiErrorText(e instanceof ApiError ? e : null) || 'Tente novamente.');
+
   const remove = async (barcode: string) => {
     try {
       await api.removeFavorite(barcode);
+    } catch (e) {
+      fail(e);
     } finally {
       reload();
     }
@@ -32,6 +37,8 @@ export default function Listas() {
     try {
       await api.addFavorite(to);
       await api.removeFavorite(from);
+    } catch (e) {
+      fail(e);
     } finally {
       reload();
     }

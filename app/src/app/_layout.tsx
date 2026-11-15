@@ -1,7 +1,7 @@
 import { BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque';
 import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
@@ -67,6 +67,14 @@ function Routes() {
     const t = setTimeout(() => setPost((p) => ({ ...p, minDone: true })), POST_LOGIN_SPLASH_MS);
     return () => clearTimeout(t);
   }, [uid, nativeHidden]);
+
+  // Saiu da conta (sessão existia e sumiu): leva direto para a tela de login.
+  const lastUid = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const previous = lastUid.current;
+    lastUid.current = uid;
+    if (previous && !uid) router.replace('/login');
+  }, [uid]);
 
   const showSplash = post.active && !(post.minDone && synced);
 

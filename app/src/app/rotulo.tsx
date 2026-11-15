@@ -14,7 +14,10 @@ const STEPS = ['a tabela nutricional', 'a lista de ingredientes'] as const;
 
 function errorText(e: unknown): string {
   const status = e instanceof ApiError ? e.status : 0;
+  if (e instanceof ApiError && e.code === 'nothing_new') return 'A foto não trouxe nenhuma informação que já não tivéssemos. Fotografe a tabela nutricional ou os ingredientes.';
   if (status === 422) return 'Não consegui ler o rótulo. Tente com mais luz, sem reflexo e com a tabela bem enquadrada.';
+  if (status === 404) return 'A leitura de rótulos ainda não está disponível no servidor. Tente mais tarde.';
+  if (status === 400) return 'Não consegui usar essa foto. Tente de novo.';
   if (status === 429) return 'Muitas tentativas seguidas. Espere um minutinho.';
   if (status === 503) return 'A leitura de rótulos está indisponível no momento.';
   if (status === 502) return 'Não consegui analisar a foto agora. Tente de novo.';

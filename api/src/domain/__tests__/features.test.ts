@@ -4,7 +4,14 @@ import { rankAlternatives, MIN_SCORE_GAIN } from '../alternatives.js';
 import { compareProducts } from '../compare.js';
 import { hasAiAccess } from '../entitlements.js';
 import { buildExplainPrompt } from '../explainPrompt.js';
-import { labelToProduct, LabelUnreadableError, parseLabelExtraction, type LabelExtraction } from '../labelReading.js';
+import { completenessScore, isIncomplete, missingData } from '../completeness.js';
+import {
+  fillFromLabel,
+  labelToProduct,
+  LabelUnreadableError,
+  parseLabelExtraction,
+  type LabelExtraction,
+} from '../labelReading.js';
 import { summarizeHistory } from '../stats.js';
 import type { Product, Profile } from '../types.js';
 
@@ -175,6 +182,53 @@ describe('leitura de rótulo', () => {
   it('porção sem tamanho não converte; sem nenhum valor → LabelUnreadableError', () => {
     const semPorcao = { ...base, per: 'porcao' as const, servingSize: null };
     expect(() => labelToProduct(semPorcao, 'user:abc')).toThrow(LabelUnreadableError);
+  });
+});
+
+describe('completude e preenchimento por foto', () => {
+  const semNada = make('s', { nutrition: {} });
+  delete (semNada as { ingredientsText?: string }).ingredientsText;
+
+  it('detecta o que falta no produto', () => {
+    expect(missingData(semNada)).toEqual({ nutrition: true, ingredients: true });
+    expect(missingData(make('ok'))).toEqual({ nutrition: false, ingredients: false });
+    expect(isIncomplete(make('ok'))).toBe(false);
+    expect(completenessScore(make('ok'))).toBeGreaterThan(completenessScore(semNada));
+  });
+
+  const foto: LabelExtraction = {
+    name: 'Qualquer',
+    brand: null,
+    isLiquid: false,
+    per: '100',
+    servingSize: null,
+    nutrition: { energyKcal: 99, sugarsG: 99, addedSugarsG: null, saturatedFatG: 3, sodiumMg: 250, fiberG: null, proteinG: null },
+    ingredientsText: 'leite, açúcar',
+  };
+
+  it('preenche só o que falta e nunca troca valor existente', () => {
+    const base = make('p', { nutrition: { sugarsG: 4 } });
+    delete (base as { ingredientsText?: string }).ingredientsText;
+    const { product, changed } = fillFromLabel(base, foto);
+    expect(changed).toBe(true);
+    expect(product.nutrition).toEqual({ sugarsG: 4, energyKcal: 99, saturatedFatG: 3, sodiumMg: 250 });
+    expect(product.ingredientsText).toBe('leite, açúcar');
+    expect(product.verified).toBe(false);
+    expect(product.name).toBe(base.name);
+  });
+
+  it('sem nada novo, devolve o mesmo produto sem alterar', () => {
+    const completo = make('c', { nutrition: { sugarsG: 1, saturatedFatG: 1, sodiumMg: 1, energyKcal: 1 } });
+    const r = fillFromLabel(completo, foto);
+    expect(r.changed).toBe(false);
+    expect(r.product).toBe(completo);
+  });
+
+  it('produto do OFF completado por foto mostra o aviso de dado de usuário', () => {
+    const base = make('p', { nutrition: { sugarsG: 4 } });
+    delete (base as { ingredientsText?: string }).ingredientsText;
+    const { product } = fillFromLabel(base, foto);
+    expect(analyzeProduct(product, null).alerts.notice).toContain('confira o rótulo');
   });
 });
 

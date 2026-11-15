@@ -42,17 +42,52 @@ const round1 = (x: number) => Math.round(x * 10) / 10;
  * Converte a leitura em Product por 100 g/ml. Se a tabela estiver por porção, converte
  * pela porção informada; sem porção, não há como converter e os valores são descartados.
  */
-export function labelToProduct(extraction: LabelExtraction, barcode: string): Product {
-  const e = extraction;
-  const perPortion = e.per === 'porcao';
-  const factor = perPortion ? (e.servingSize ? 100 / e.servingSize : 0) : 1;
-
+function nutritionFromLabel(e: LabelExtraction): Nutrition {
+  const factor = e.per === 'porcao' ? (e.servingSize ? 100 / e.servingSize : 0) : 1;
   const nutrition: Nutrition = {};
   for (const key of NUTRIENTS) {
     const raw = e.nutrition[key];
     if (raw === null || factor === 0) continue;
     nutrition[key] = round1(raw * factor);
   }
+  return nutrition;
+}
+
+/**
+ * Completa um produto que já existe com o que a foto trouxe: só preenche o que FALTA
+ * (nunca troca um valor existente). Se algo foi preenchido, o produto passa a `verified: false`
+ * para o app avisar que parte dos dados veio de foto de usuário.
+ */
+export function fillFromLabel(existing: Product, extraction: LabelExtraction): { product: Product; changed: boolean } {
+  const fromPhoto = nutritionFromLabel(extraction);
+  const nutrition: Nutrition = { ...existing.nutrition };
+  let changed = false;
+  for (const key of NUTRIENTS) {
+    if (nutrition[key] === undefined && fromPhoto[key] !== undefined) {
+      nutrition[key] = fromPhoto[key];
+      changed = true;
+    }
+  }
+
+  const hasIngredients = !!existing.ingredientsText && existing.ingredientsText.trim() !== '';
+  const addIngredients = !hasIngredients && !!extraction.ingredientsText;
+  if (addIngredients) changed = true;
+
+  if (!changed) return { product: existing, changed: false };
+  return {
+    product: {
+      ...existing,
+      nutrition,
+      ...(addIngredients ? { ingredientsText: extraction.ingredientsText! } : {}),
+      verified: false,
+    },
+    changed: true,
+  };
+}
+
+export function labelToProduct(extraction: LabelExtraction, barcode: string): Product {
+  const e = extraction;
+  const nutrition = nutritionFromLabel(e);
   if (Object.keys(nutrition).length === 0) throw new LabelUnreadableError();
 
   return {

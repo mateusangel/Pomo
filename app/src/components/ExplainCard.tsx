@@ -11,7 +11,10 @@ function errorText(e: unknown): string {
   if (status === 503) return 'O Pomo.ai está indisponível no momento.';
   if (status === 502) return 'Não consegui pensar numa resposta agora. Tente de novo.';
   if (status === 400) return 'Ainda não há dados suficientes para explicar.';
-  return 'Sem conexão com o servidor. Verifique sua internet.';
+  if (status === 404) return 'Esta função ainda não está disponível no servidor. Tente mais tarde.';
+  if (status === 401) return 'Sua sessão expirou. Entre novamente.';
+  if (status === 0) return 'Sem conexão com o servidor. Verifique sua internet.';
+  return 'Algo deu errado. Tente novamente.';
 }
 
 /** Renderiza **negrito** simples. */

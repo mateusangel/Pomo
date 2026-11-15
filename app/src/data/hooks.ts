@@ -41,6 +41,7 @@ export function apiErrorText(e: ApiError | null): string {
   if (!e) return '';
   if (e.status === 0) return 'Sem conexão com o servidor do Pomo. Verifique se a API está ligada e sua internet.';
   if (e.status === 401) return 'Sua sessão expirou. Entre novamente.';
-  if (e.status === 502) return 'Não conseguimos consultar a base agora. Tente de novo em instantes.';
+  if (e.status === 502 || e.status === 503) return 'Não conseguimos consultar a base agora. Tente de novo em instantes.';
+  if (e.status === 404) return 'Esta função ainda não está disponível no servidor. Tente de novo mais tarde ou atualize o app.';
   return 'Algo deu errado. Tente novamente.';
 }

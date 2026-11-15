@@ -33,22 +33,36 @@ export class ApiError extends Error {
   }
 }
 
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Servidor gratuito do Render dorme e leva até ~1 min para acordar: falhas de rede e 502/503/504 merecem nova tentativa. */
+const RETRY_DELAYS_MS = [2000, 5000];
+const isTransient = (status: number) => status === 502 || status === 503 || status === 504;
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${path}`, {
-      method,
-      headers: {
-        'content-type': 'application/json',
-        ...(token ? { authorization: `Bearer ${token}` } : {}),
-      },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    });
-  } catch {
-    throw new ApiError(0, 'network');
+  // Só repete leituras (GET) e a escrita idempotente de favoritos; nunca POST (scan, chat, rótulo).
+  const retryable = method === 'GET' || method === 'DELETE' || (method === 'PUT' && path.startsWith('/v1/favorites'));
+
+  let res: Response | null = null;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await fetch(`${API_URL}${path}`, {
+        method,
+        headers: {
+          'content-type': 'application/json',
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      });
+      if (!(retryable && isTransient(res.status) && attempt < RETRY_DELAYS_MS.length)) break;
+    } catch {
+      if (!retryable || attempt >= RETRY_DELAYS_MS.length) throw new ApiError(0, 'network');
+    }
+    await sleep(RETRY_DELAYS_MS[attempt]!);
   }
+  if (!res) throw new ApiError(0, 'network');
   if (res.status === 204) return undefined as T;
   const json = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) throw new ApiError(res.status, json.error ?? 'unknown');

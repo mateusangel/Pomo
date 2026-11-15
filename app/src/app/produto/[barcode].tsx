@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ProductAnalysis } from '../../api/types';
 import { ExplainCard } from '../../components/ExplainCard';
@@ -31,8 +31,12 @@ export default function Produto() {
     setSavedOverride(next);
     try {
       await (next ? api.addFavorite(analysis.product.barcode) : api.removeFavorite(analysis.product.barcode));
-    } catch {
+    } catch (e) {
       setSavedOverride(!next);
+      Alert.alert(
+        next ? 'Não foi possível salvar' : 'Não foi possível remover',
+        apiErrorText(e instanceof ApiError ? e : null) || 'Tente novamente em instantes.',
+      );
     }
   };
 
@@ -81,6 +85,14 @@ export default function Produto() {
                 Dados lidos de uma foto de rótulo, ainda não verificados. Confira a tabela e os ingredientes na embalagem.
               </Text>
             </View>
+          )}
+
+          {(!ok || !alerts.dataComplete) && !product.barcode.startsWith('user:') && (
+            <Button
+              label="Completar com foto do rótulo"
+              tone="ghost"
+              onPress={() => router.push({ pathname: '/rotulo', params: { barcode: product.barcode } })}
+            />
           )}
 
           <Button label="Perguntar ao Pomo.ai" tone="leaf" onPress={() => router.push({ pathname: '/chat', params: { barcode: product.barcode } })} />

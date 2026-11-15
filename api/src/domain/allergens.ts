@@ -154,7 +154,8 @@ export function detectAlerts(product: Product, profile: Profile): AlertReport {
 
   const notices: string[] = [];
   if (!dataComplete) notices.push(NOTICE_INCOMPLETE);
-  if (product.source === 'user' && !product.verified) notices.push(NOTICE_USER);
+  // Dado de usuário, ou produto do OFF que o usuário completou com foto: sempre avisar.
+  if (!product.verified) notices.push(NOTICE_USER);
 
   return {
     alerts,

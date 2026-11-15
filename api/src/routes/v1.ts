@@ -8,11 +8,14 @@ import { normalizeBarcode } from '../domain/barcode.js';
 import { buildChatSystem } from '../domain/chatPrompt.js';
 import { buildExplainPrompt, EXPLAIN_MODULES, type ExplainModule } from '../domain/explainPrompt.js';
 import { hasAiAccess, type Plan } from '../domain/entitlements.js';
+import { completenessScore, isIncomplete } from '../domain/completeness.js';
 import {
   LABEL_PROMPT,
   LabelUnreadableError,
+  fillFromLabel,
   labelToProduct,
   parseLabelExtraction,
+  type LabelExtraction,
 } from '../domain/labelReading.js';
 import { summarizeHistory, type StatsSummary } from '../domain/stats.js';
 import type { Product, ProductAnalysis, Profile } from '../domain/types.js';
@@ -102,12 +105,28 @@ export function registerV1Routes(app: FastifyInstance, deps: Deps): void {
   const now = deps.now ?? (() => new Date());
   const planOf = deps.planOf ?? (async () => 'gratis' as Plan);
 
+  // Produtos do OFF guardados com dados incompletos (leitura antiga ou OFF desatualizado) são
+  // consultados de novo, no máximo uma vez por hora cada, e só trocados se vierem mais completos.
+  const REFRESH_EVERY_MS = 60 * 60 * 1000;
+  const refreshedAt = new Map<string, number>();
+
+  async function refreshIfIncomplete(stored: Product): Promise<Product> {
+    if (stored.source !== 'off' || !stored.verified || !isIncomplete(stored)) return stored;
+    const last = refreshedAt.get(stored.barcode) ?? 0;
+    if (now().getTime() - last < REFRESH_EVERY_MS) return stored;
+    refreshedAt.set(stored.barcode, now().getTime());
+    const result = await off(stored.barcode);
+    if (result.kind !== 'found' || completenessScore(result.product) <= completenessScore(stored)) return stored;
+    await repos.products.upsert(result.product);
+    return result.product;
+  }
+
   async function resolveProduct(raw: string): Promise<Resolved> {
     const barcode = normalizeBarcode(raw);
     if (!barcode) return { kind: 'invalid' };
 
     const stored = await repos.products.findByBarcode(barcode);
-    if (stored) return { kind: 'ok', product: stored };
+    if (stored) return { kind: 'ok', product: await refreshIfIncomplete(stored) };
 
     const result = await off(barcode);
     if (result.kind === 'error') return { kind: 'upstream' };
@@ -219,22 +238,30 @@ export function registerV1Routes(app: FastifyInstance, deps: Deps): void {
         return reply.code(502).send({ error: 'upstream_unavailable' });
       }
 
-      let product: Product;
+      let extraction: LabelExtraction;
       try {
-        const extraction = parseLabelExtraction(raw);
-        product = labelToProduct(extraction, barcode ?? `user:${randomUUID()}`);
+        extraction = parseLabelExtraction(raw);
       } catch (err) {
         if (err instanceof LabelUnreadableError) return reply.code(422).send({ error: 'label_unreadable' });
         throw err;
       }
 
-      // Nunca sobrescreve um produto que já existe (dado do OFF ou verificado) com foto de usuário.
+      // Produto que já existe: a foto só PREENCHE o que falta (nunca troca valor existente).
       const existing = barcode ? await repos.products.findByBarcode(barcode) : null;
+      let product: Product;
       if (existing) {
-        product = existing;
+        const filled = fillFromLabel(existing, extraction);
+        if (!filled.changed) return reply.code(422).send({ error: 'nothing_new' });
+        product = filled.product;
       } else {
-        await repos.products.upsert(product);
+        try {
+          product = labelToProduct(extraction, barcode ?? `user:${randomUUID()}`);
+        } catch (err) {
+          if (err instanceof LabelUnreadableError) return reply.code(422).send({ error: 'label_unreadable' });
+          throw err;
+        }
       }
+      await repos.products.upsert(product);
       await repos.history.add(request.userId, product.barcode);
       const stored = await repos.profiles.get(request.userId);
       return analyzeProduct(product, stored?.profile ?? null);

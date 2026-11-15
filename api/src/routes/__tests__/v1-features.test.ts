@@ -177,17 +177,83 @@ describe('POST /v1/labels (foto do rótulo)', () => {
     expect(r2.statusCode).toBe(502);
   });
 
-  it('nunca sobrescreve um produto que já existe com a foto', async () => {
+  it('produto já completo: a foto não traz nada novo → 422 e nada muda', async () => {
     const ctx = setup({ vision: async () => goodJson });
-    ctx.products.set(yogurtBom.barcode, yogurtBom);
+    const completo: Product = { ...yogurtBom, nutrition: { ...yogurtBom.nutrition, energyKcal: 60 } };
+    ctx.products.set(completo.barcode, completo);
     const res = await ctx.app.inject({
       method: 'POST',
       url: '/v1/labels',
       headers: await auth(),
-      payload: { images: [image], barcode: yogurtBom.barcode },
+      payload: { images: [image], barcode: completo.barcode },
     });
-    expect(res.json().product.name).toBe('Iogurte Natural');
-    expect(res.json().product.source).toBe('off');
+    expect(res.statusCode).toBe(422);
+    expect(res.json()).toEqual({ error: 'nothing_new' });
+    expect(ctx.products.get(completo.barcode)).toEqual(completo);
+  });
+
+  it('produto incompleto: a foto preenche só o que falta e marca como não verificado', async () => {
+    const ctx = setup({ vision: async () => goodJson });
+    const incompleto: Product = {
+      ...yogurtBom,
+      nutrition: { sugarsG: 4 },
+      ingredientsText: undefined,
+    } as Product;
+    delete (incompleto as { ingredientsText?: string }).ingredientsText;
+    ctx.products.set(incompleto.barcode, incompleto);
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/v1/labels',
+      headers: await auth(),
+      payload: { images: [image], barcode: incompleto.barcode },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.product.name).toBe('Iogurte Natural');
+    expect(body.product.nutrition.sugarsG).toBe(4); // valor do OFF preservado (a foto dizia 20)
+    expect(body.product.nutrition.sodiumMg).toBe(500); // faltava: veio da foto
+    expect(body.product.ingredientsText).toBe('farinha, açúcar');
+    expect(body.product.verified).toBe(false);
+    expect(body.alerts.notice).toContain('confira o rótulo');
+  });
+});
+
+describe('re-consulta de produto incompleto no OFF', () => {
+  const incompleto: Product = {
+    ...yogurtBom,
+    nutrition: {},
+    allergensTags: [],
+  };
+  delete (incompleto as { ingredientsText?: string }).ingredientsText;
+
+  it('troca pelos dados novos quando o OFF devolve mais completo, e só uma vez por hora', async () => {
+    const off = vi.fn<OffLookup>(async () => ({ kind: 'found', product: yogurtBom }));
+    const ctx = setup({ off });
+    ctx.products.set(incompleto.barcode, incompleto);
+
+    const first = await ctx.app.inject({ url: `/v1/products/${incompleto.barcode}`, headers: await auth() });
+    expect(first.json().score.status).toBe('ok');
+    expect(ctx.products.get(incompleto.barcode)?.ingredientsText).toBe('leite, fermentos lácteos');
+
+    // Já completo: não consulta de novo.
+    await ctx.app.inject({ url: `/v1/products/${incompleto.barcode}`, headers: await auth() });
+    expect(off).toHaveBeenCalledTimes(1);
+  });
+
+  it('se o OFF falhar ou não trouxer mais, mantém o que já tinha', async () => {
+    const ctx = setup({ off: async () => ({ kind: 'error' }) });
+    ctx.products.set(incompleto.barcode, incompleto);
+    const res = await ctx.app.inject({ url: `/v1/products/${incompleto.barcode}`, headers: await auth() });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().score.status).toBe('insufficient_data');
+  });
+
+  it('produto de usuário nunca é re-consultado', async () => {
+    const off = vi.fn<OffLookup>(async () => ({ kind: 'found', product: yogurtBom }));
+    const ctx = setup({ off });
+    ctx.products.set(incompleto.barcode, { ...incompleto, source: 'user', verified: false });
+    await ctx.app.inject({ url: `/v1/products/${incompleto.barcode}`, headers: await auth() });
+    expect(off).not.toHaveBeenCalled();
   });
 });
 
