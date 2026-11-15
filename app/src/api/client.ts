@@ -1,6 +1,18 @@
 import Constants from 'expo-constants';
 import { supabase } from '../lib/supabase';
-import type { ChatMessage, HistoryItem, ProductAnalysis, ProfileData, ProfileResponse } from './types';
+import type {
+  AlternativesResponse,
+  ChatMessage,
+  CompareResponse,
+  ExplainRequest,
+  FavoriteItem,
+  HistoryItem,
+  LabelImage,
+  ProductAnalysis,
+  ProfileData,
+  ProfileResponse,
+  StatsSummary,
+} from './types';
 
 function resolveBaseUrl(): string {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL;
@@ -53,5 +65,16 @@ export const api = {
     request<ProfileResponse>('PUT', '/v1/profile', { profile, consent }),
   chat: (messages: ChatMessage[], barcode?: string) =>
     request<{ reply: string }>('POST', '/v1/chat', { messages, ...(barcode ? { barcode } : {}) }),
+  alternatives: (barcode: string) =>
+    request<AlternativesResponse>('GET', `/v1/products/${encodeURIComponent(barcode)}/alternatives`),
+  compare: (barcodes: string[]) =>
+    request<CompareResponse>('GET', `/v1/compare?barcodes=${encodeURIComponent(barcodes.join(','))}`),
+  readLabel: (images: LabelImage[], barcode?: string) =>
+    request<ProductAnalysis>('POST', '/v1/labels', { images, ...(barcode ? { barcode } : {}) }),
+  stats: (days = 30) => request<StatsSummary>('GET', `/v1/stats?days=${days}`),
+  favorites: () => request<{ items: FavoriteItem[] }>('GET', '/v1/favorites'),
+  addFavorite: (barcode: string) => request<void>('PUT', `/v1/favorites/${encodeURIComponent(barcode)}`),
+  removeFavorite: (barcode: string) => request<void>('DELETE', `/v1/favorites/${encodeURIComponent(barcode)}`),
+  explain: (input: ExplainRequest) => request<{ module: string; reply: string }>('POST', '/v1/ai/explain', input),
   deleteAccount: () => request<void>('DELETE', '/v1/account'),
 };

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,10 @@ import { colors, fonts } from '../theme';
 
 export default function Search() {
   const insets = useSafeAreaInsets();
+  // Modo "escolher": usado pela comparação; tocar num resultado devolve o produto para lá.
+  const { pick, current } = useLocalSearchParams<{ pick?: string; current?: string }>();
+  const picking = pick === '1';
+  const chosen = (current ?? '').split(',').filter(Boolean);
   const [text, setText] = useState('');
   const [query, setQuery] = useState('');
 
@@ -54,7 +58,23 @@ export default function Search() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 24 }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-        renderItem={({ item }) => <ProductRow analysis={item} />}
+        renderItem={({ item }) =>
+          picking ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                const next = [...new Set([...chosen, item.product.barcode])].slice(0, 3);
+                router.dismissTo({ pathname: '/comparar', params: { barcodes: next.join(',') } });
+              }}
+            >
+              <View pointerEvents="none">
+                <ProductRow analysis={item} />
+              </View>
+            </Pressable>
+          ) : (
+            <ProductRow analysis={item} />
+          )
+        }
         ListEmptyComponent={empty}
       />
     </View>

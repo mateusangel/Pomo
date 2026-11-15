@@ -32,3 +32,8 @@ export type Product = Prisma.ProductModel
  * 
  */
 export type ScanHistory = Prisma.ScanHistoryModel
+/**
+ * Model Favorite
+ * 
+ */
+export type Favorite = Prisma.FavoriteModel

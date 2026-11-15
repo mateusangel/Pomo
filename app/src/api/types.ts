@@ -89,3 +89,70 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
 }
+
+export interface Alternative {
+  analysis: ProductAnalysis;
+  scoreGain: number;
+  reason: string;
+}
+
+export interface AlternativesResponse {
+  current: ProductAnalysis;
+  /** false quando o produto não é ruim: o app não mostra a seção. */
+  shown: boolean;
+  alternatives: Alternative[];
+}
+
+export interface ComparisonRow {
+  key: keyof Nutrition;
+  label: string;
+  values: (number | null)[];
+  bestIndex: number | null;
+}
+
+export interface Comparison {
+  scores: { barcode: string; score: number | null }[];
+  rows: ComparisonRow[];
+  recommendation: { barcode: string; reason: string } | null;
+  notice?: string;
+}
+
+export interface CompareResponse {
+  products: ProductAnalysis[];
+  comparison: Comparison;
+}
+
+export interface StatsSummary {
+  days: number;
+  totalScans: number;
+  uniqueProducts: number;
+  averageScore: number | null;
+  bandCounts: Record<'excelente' | 'bom' | 'regular' | 'ruim' | 'sem_nota', number>;
+  estimatedSugarG: number;
+  estimatedSodiumMg: number;
+  daily: { date: string; scans: number; sugarG: number; sodiumMg: number }[];
+  trend: 'subiu' | 'caiu' | 'estavel' | 'sem_dados';
+  trendDelta: number | null;
+  frequentBad: { barcode: string; name: string; count: number }[];
+}
+
+export interface FavoriteItem {
+  product: Product;
+  analysis: ProductAnalysis;
+  addedAt: string;
+  suggestion: Alternative | null;
+}
+
+export type ExplainModule = 'produto' | 'historico' | 'evolucao' | 'comparacao' | 'alternativas' | 'listas';
+
+export interface ExplainRequest {
+  module: ExplainModule;
+  barcode?: string;
+  barcodes?: string[];
+  days?: number;
+}
+
+export interface LabelImage {
+  mimeType: 'image/jpeg';
+  data: string;
+}

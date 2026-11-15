@@ -53,7 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Profile: 'Profile',
   Product: 'Product',
-  ScanHistory: 'ScanHistory'
+  ScanHistory: 'ScanHistory',
+  Favorite: 'Favorite'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -113,6 +114,15 @@ export const ScanHistoryScalarFieldEnum = {
 } as const
 
 export type ScanHistoryScalarFieldEnum = (typeof ScanHistoryScalarFieldEnum)[keyof typeof ScanHistoryScalarFieldEnum]
+
+
+export const FavoriteScalarFieldEnum = {
+  userId: 'userId',
+  barcode: 'barcode',
+  createdAt: 'createdAt'
+} as const
+
+export type FavoriteScalarFieldEnum = (typeof FavoriteScalarFieldEnum)[keyof typeof FavoriteScalarFieldEnum]
 
 
 export const SortOrder = {

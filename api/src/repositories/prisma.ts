@@ -66,6 +66,35 @@ export function createPrismaRepositories(db: PrismaClient): Repositories {
           FROM search_products_by_name(${query}, ${limit}::int)`;
         return rows.map(toProduct);
       },
+      async listByCategory(category, limit) {
+        const rows = await db.product.findMany({
+          where: { category, source: 'off' },
+          take: limit,
+          orderBy: { name: 'asc' },
+        });
+        return rows.map(toProduct);
+      },
+    },
+
+    favorites: {
+      async list(userId) {
+        const rows = await db.favorite.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+          include: { product: true },
+        });
+        return rows.map((r) => ({ product: toProduct(r.product), addedAt: r.createdAt }));
+      },
+      async add(userId, barcode) {
+        await db.favorite.upsert({
+          where: { userId_barcode: { userId, barcode } },
+          create: { userId, barcode },
+          update: {},
+        });
+      },
+      async remove(userId, barcode) {
+        await db.favorite.deleteMany({ where: { userId, barcode } });
+      },
     },
 
     profiles: {

@@ -231,6 +231,7 @@ export type ProductWhereInput = {
   verified?: Prisma.BoolFilter<"Product"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   scans?: Prisma.ScanHistoryListRelationFilter
+  favorites?: Prisma.FavoriteListRelationFilter
 }
 
 export type ProductOrderByWithRelationInput = {
@@ -248,6 +249,7 @@ export type ProductOrderByWithRelationInput = {
   verified?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   scans?: Prisma.ScanHistoryOrderByRelationAggregateInput
+  favorites?: Prisma.FavoriteOrderByRelationAggregateInput
 }
 
 export type ProductWhereUniqueInput = Prisma.AtLeast<{
@@ -268,6 +270,7 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   verified?: Prisma.BoolFilter<"Product"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   scans?: Prisma.ScanHistoryListRelationFilter
+  favorites?: Prisma.FavoriteListRelationFilter
 }, "barcode">
 
 export type ProductOrderByWithAggregationInput = {
@@ -323,6 +326,7 @@ export type ProductCreateInput = {
   verified?: boolean
   createdAt?: Date | string
   scans?: Prisma.ScanHistoryCreateNestedManyWithoutProductInput
+  favorites?: Prisma.FavoriteCreateNestedManyWithoutProductInput
 }
 
 export type ProductUncheckedCreateInput = {
@@ -340,6 +344,7 @@ export type ProductUncheckedCreateInput = {
   verified?: boolean
   createdAt?: Date | string
   scans?: Prisma.ScanHistoryUncheckedCreateNestedManyWithoutProductInput
+  favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type ProductUpdateInput = {
@@ -357,6 +362,7 @@ export type ProductUpdateInput = {
   verified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   scans?: Prisma.ScanHistoryUpdateManyWithoutProductNestedInput
+  favorites?: Prisma.FavoriteUpdateManyWithoutProductNestedInput
 }
 
 export type ProductUncheckedUpdateInput = {
@@ -374,6 +380,7 @@ export type ProductUncheckedUpdateInput = {
   verified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   scans?: Prisma.ScanHistoryUncheckedUpdateManyWithoutProductNestedInput
+  favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type ProductCreateManyInput = {
@@ -514,6 +521,20 @@ export type ProductUpdateOneRequiredWithoutScansNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutScansInput, Prisma.ProductUpdateWithoutScansInput>, Prisma.ProductUncheckedUpdateWithoutScansInput>
 }
 
+export type ProductCreateNestedOneWithoutFavoritesInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutFavoritesInput, Prisma.ProductUncheckedCreateWithoutFavoritesInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutFavoritesInput
+  connect?: Prisma.ProductWhereUniqueInput
+}
+
+export type ProductUpdateOneRequiredWithoutFavoritesNestedInput = {
+  create?: Prisma.XOR<Prisma.ProductCreateWithoutFavoritesInput, Prisma.ProductUncheckedCreateWithoutFavoritesInput>
+  connectOrCreate?: Prisma.ProductCreateOrConnectWithoutFavoritesInput
+  upsert?: Prisma.ProductUpsertWithoutFavoritesInput
+  connect?: Prisma.ProductWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProductUpdateToOneWithWhereWithoutFavoritesInput, Prisma.ProductUpdateWithoutFavoritesInput>, Prisma.ProductUncheckedUpdateWithoutFavoritesInput>
+}
+
 export type ProductCreateWithoutScansInput = {
   barcode: string
   name: string
@@ -528,6 +549,7 @@ export type ProductCreateWithoutScansInput = {
   source: string
   verified?: boolean
   createdAt?: Date | string
+  favorites?: Prisma.FavoriteCreateNestedManyWithoutProductInput
 }
 
 export type ProductUncheckedCreateWithoutScansInput = {
@@ -544,6 +566,7 @@ export type ProductUncheckedCreateWithoutScansInput = {
   source: string
   verified?: boolean
   createdAt?: Date | string
+  favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type ProductCreateOrConnectWithoutScansInput = {
@@ -576,6 +599,7 @@ export type ProductUpdateWithoutScansInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   verified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  favorites?: Prisma.FavoriteUpdateManyWithoutProductNestedInput
 }
 
 export type ProductUncheckedUpdateWithoutScansInput = {
@@ -592,6 +616,91 @@ export type ProductUncheckedUpdateWithoutScansInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   verified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutProductNestedInput
+}
+
+export type ProductCreateWithoutFavoritesInput = {
+  barcode: string
+  name: string
+  brand?: string | null
+  category?: string | null
+  isLiquid?: boolean
+  nutrition?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  ingredientsText?: string | null
+  allergensTags?: Prisma.ProductCreateallergensTagsInput | string[]
+  tracesTags?: Prisma.ProductCreatetracesTagsInput | string[]
+  additivesTags?: Prisma.ProductCreateadditivesTagsInput | string[]
+  source: string
+  verified?: boolean
+  createdAt?: Date | string
+  scans?: Prisma.ScanHistoryCreateNestedManyWithoutProductInput
+}
+
+export type ProductUncheckedCreateWithoutFavoritesInput = {
+  barcode: string
+  name: string
+  brand?: string | null
+  category?: string | null
+  isLiquid?: boolean
+  nutrition?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  ingredientsText?: string | null
+  allergensTags?: Prisma.ProductCreateallergensTagsInput | string[]
+  tracesTags?: Prisma.ProductCreatetracesTagsInput | string[]
+  additivesTags?: Prisma.ProductCreateadditivesTagsInput | string[]
+  source: string
+  verified?: boolean
+  createdAt?: Date | string
+  scans?: Prisma.ScanHistoryUncheckedCreateNestedManyWithoutProductInput
+}
+
+export type ProductCreateOrConnectWithoutFavoritesInput = {
+  where: Prisma.ProductWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProductCreateWithoutFavoritesInput, Prisma.ProductUncheckedCreateWithoutFavoritesInput>
+}
+
+export type ProductUpsertWithoutFavoritesInput = {
+  update: Prisma.XOR<Prisma.ProductUpdateWithoutFavoritesInput, Prisma.ProductUncheckedUpdateWithoutFavoritesInput>
+  create: Prisma.XOR<Prisma.ProductCreateWithoutFavoritesInput, Prisma.ProductUncheckedCreateWithoutFavoritesInput>
+  where?: Prisma.ProductWhereInput
+}
+
+export type ProductUpdateToOneWithWhereWithoutFavoritesInput = {
+  where?: Prisma.ProductWhereInput
+  data: Prisma.XOR<Prisma.ProductUpdateWithoutFavoritesInput, Prisma.ProductUncheckedUpdateWithoutFavoritesInput>
+}
+
+export type ProductUpdateWithoutFavoritesInput = {
+  barcode?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isLiquid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  nutrition?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  ingredientsText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allergensTags?: Prisma.ProductUpdateallergensTagsInput | string[]
+  tracesTags?: Prisma.ProductUpdatetracesTagsInput | string[]
+  additivesTags?: Prisma.ProductUpdateadditivesTagsInput | string[]
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  verified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scans?: Prisma.ScanHistoryUpdateManyWithoutProductNestedInput
+}
+
+export type ProductUncheckedUpdateWithoutFavoritesInput = {
+  barcode?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isLiquid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  nutrition?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  ingredientsText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allergensTags?: Prisma.ProductUpdateallergensTagsInput | string[]
+  tracesTags?: Prisma.ProductUpdatetracesTagsInput | string[]
+  additivesTags?: Prisma.ProductUpdateadditivesTagsInput | string[]
+  source?: Prisma.StringFieldUpdateOperationsInput | string
+  verified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  scans?: Prisma.ScanHistoryUncheckedUpdateManyWithoutProductNestedInput
 }
 
 
@@ -601,10 +710,12 @@ export type ProductUncheckedUpdateWithoutScansInput = {
 
 export type ProductCountOutputType = {
   scans: number
+  favorites: number
 }
 
 export type ProductCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   scans?: boolean | ProductCountOutputTypeCountScansArgs
+  favorites?: boolean | ProductCountOutputTypeCountFavoritesArgs
 }
 
 /**
@@ -624,6 +735,13 @@ export type ProductCountOutputTypeCountScansArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.ScanHistoryWhereInput
 }
 
+/**
+ * ProductCountOutputType without action
+ */
+export type ProductCountOutputTypeCountFavoritesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FavoriteWhereInput
+}
+
 
 export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   barcode?: boolean
@@ -640,6 +758,7 @@ export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   verified?: boolean
   createdAt?: boolean
   scans?: boolean | Prisma.Product$scansArgs<ExtArgs>
+  favorites?: boolean | Prisma.Product$favoritesArgs<ExtArgs>
   _count?: boolean | Prisma.ProductCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["product"]>
 
@@ -694,6 +813,7 @@ export type ProductSelectScalar = {
 export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"barcode" | "name" | "brand" | "category" | "isLiquid" | "nutrition" | "ingredientsText" | "allergensTags" | "tracesTags" | "additivesTags" | "source" | "verified" | "createdAt", ExtArgs["result"]["product"]>
 export type ProductInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   scans?: boolean | Prisma.Product$scansArgs<ExtArgs>
+  favorites?: boolean | Prisma.Product$favoritesArgs<ExtArgs>
   _count?: boolean | Prisma.ProductCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProductIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -703,6 +823,7 @@ export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   name: "Product"
   objects: {
     scans: Prisma.$ScanHistoryPayload<ExtArgs>[]
+    favorites: Prisma.$FavoritePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     barcode: string
@@ -1113,6 +1234,7 @@ readonly fields: ProductFieldRefs;
 export interface Prisma__ProductClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   scans<T extends Prisma.Product$scansArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$scansArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ScanHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  favorites<T extends Prisma.Product$favoritesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Product$favoritesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FavoritePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1569,6 +1691,30 @@ export type Product$scansArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.ScanHistoryScalarFieldEnum | Prisma.ScanHistoryScalarFieldEnum[]
+}
+
+/**
+ * Product.favorites
+ */
+export type Product$favoritesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Favorite
+   */
+  select?: Prisma.FavoriteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Favorite
+   */
+  omit?: Prisma.FavoriteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FavoriteInclude<ExtArgs> | null
+  where?: Prisma.FavoriteWhereInput
+  orderBy?: Prisma.FavoriteOrderByWithRelationInput | Prisma.FavoriteOrderByWithRelationInput[]
+  cursor?: Prisma.FavoriteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FavoriteScalarFieldEnum | Prisma.FavoriteScalarFieldEnum[]
 }
 
 /**

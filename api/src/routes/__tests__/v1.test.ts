@@ -37,11 +37,24 @@ function fakeRepos() {
   const products = new Map<string, Product>();
   const profiles = new Map<string, StoredProfile>();
   const history: Array<{ userId: string; barcode: string; scannedAt: Date }> = [];
+  const favorites = new Map<string, { userId: string; barcode: string; addedAt: Date }>();
   const repos: Repositories = {
     products: {
       findByBarcode: async (b) => products.get(b) ?? null,
       upsert: async (p) => void products.set(p.barcode, p),
       searchByName: async (q) => [...products.values()].filter((p) => p.name.toLowerCase().includes(q.toLowerCase())),
+      listByCategory: async (category) =>
+        [...products.values()].filter((p) => p.category === category && p.source === 'off'),
+    },
+    favorites: {
+      list: async (userId) =>
+        [...favorites.values()]
+          .filter((f) => f.userId === userId)
+          .map((f) => ({ product: products.get(f.barcode)!, addedAt: f.addedAt })),
+      add: async (userId, barcode) => {
+        if (!favorites.has(`${userId}|${barcode}`)) favorites.set(`${userId}|${barcode}`, { userId, barcode, addedAt: new Date() });
+      },
+      remove: async (userId, barcode) => void favorites.delete(`${userId}|${barcode}`),
     },
     profiles: {
       get: async (u) => profiles.get(u) ?? null,

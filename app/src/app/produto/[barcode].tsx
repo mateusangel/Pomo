@@ -1,8 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Nutrition, ProductAnalysis } from '../../api/types';
+import type { ProductAnalysis } from '../../api/types';
+import { ExplainCard } from '../../components/ExplainCard';
 import { Icon } from '../../components/Icon';
+import { ProductRow } from '../../components/ProductRow';
 import { Pomo, type PomoMood } from '../../components/Pomo';
 import { Body, Button, Card, H1, H2 } from '../../components/ui';
 import { api, ApiError } from '../../api/client';
@@ -17,6 +20,21 @@ export default function Produto() {
   const insets = useSafeAreaInsets();
   const state = useAsync(() => (fromScan === '1' ? api.scan(barcode) : api.product(barcode)), [barcode, fromScan]);
   const analysis = state.data;
+  const alternatives = useAsync(() => api.alternatives(barcode), [barcode]);
+  const favorites = useAsync(() => api.favorites(), [barcode]);
+  const [savedOverride, setSavedOverride] = useState<boolean | null>(null);
+  const saved = savedOverride ?? (favorites.data?.items.some((i) => i.product.barcode === analysis?.product.barcode) ?? false);
+
+  const toggleSaved = async () => {
+    if (!analysis) return;
+    const next = !saved;
+    setSavedOverride(next);
+    try {
+      await (next ? api.addFavorite(analysis.product.barcode) : api.removeFavorite(analysis.product.barcode));
+    } catch {
+      setSavedOverride(!next);
+    }
+  };
 
   if (state.loading) {
     return (
@@ -56,7 +74,22 @@ export default function Produto() {
         <View style={s.content}>
           <Alerts analysis={analysis} />
 
+          {product.source === 'user' && !product.verified && (
+            <View style={[s.alertBox, { backgroundColor: colors.amberSoft }]}>
+              <Icon name="alert" color={colors.amberDeep} />
+              <Text style={[s.alertReason, { flex: 1 }]}>
+                Dados lidos de uma foto de rótulo, ainda não verificados. Confira a tabela e os ingredientes na embalagem.
+              </Text>
+            </View>
+          )}
+
           <Button label="Perguntar ao Pomo.ai" tone="leaf" onPress={() => router.push({ pathname: '/chat', params: { barcode: product.barcode } })} />
+          <ExplainCard request={{ module: 'produto', barcode: product.barcode }} />
+
+          <View style={s.actions}>
+            <Button label="Comparar" tone="ghost" style={s.action} onPress={() => router.push({ pathname: '/comparar', params: { barcodes: product.barcode } })} />
+            <Button label={saved ? 'Na sua lista' : 'Salvar na lista'} tone="ghost" style={s.action} onPress={toggleSaved} />
+          </View>
 
           {ok && ok.warnings.length > 0 && (
             <View style={s.lupa}>
@@ -77,6 +110,25 @@ export default function Produto() {
               <View style={s.sep} />
               {ok.breakdown.map((b) => <Bar key={b.label} label={b.label} points={b.points} />)}
               <Body mute style={s.small}>Nota calculada por regras fixas (versão {analysis.scoreVersion}). Seu perfil não altera a nota.</Body>
+            </Card>
+          )}
+
+          {alternatives.data?.shown && alternatives.data.alternatives.length > 0 && (
+            <View style={{ gap: 10 }}>
+              <H2>Alternativas melhores</H2>
+              <Body mute style={s.small}>Mesma categoria, sem os seus alérgenos. Ainda não temos preços.</Body>
+              {alternatives.data.alternatives.map((alt) => (
+                <View key={alt.analysis.product.barcode} style={{ gap: 4 }}>
+                  <ProductRow analysis={alt.analysis} />
+                  <Text style={s.altReason}>+{alt.scoreGain} pontos • {alt.reason}</Text>
+                </View>
+              ))}
+              <ExplainCard request={{ module: 'alternativas', barcode: product.barcode }} label="Por que essas alternativas?" />
+            </View>
+          )}
+          {alternatives.data?.shown && alternatives.data.alternatives.length === 0 && (
+            <Card>
+              <Body mute>Ainda não conhecemos alternativas melhores desta categoria. Quanto mais produtos escaneados, mais sugestões.</Body>
             </Card>
           )}
 
@@ -211,7 +263,7 @@ function NotFound({ barcode, top, bottom }: { barcode: string; top: number; bott
         <H1 style={{ textAlign: 'center' }}>Não achei esse produto</H1>
         <Body mute style={{ textAlign: 'center', maxWidth: 300 }}>O código {barcode} não está na nossa base. Tire uma foto do rótulo para cadastrar.</Body>
       </View>
-      <Button label="Fotografar o rótulo" />
+      <Button label="Fotografar o rótulo" onPress={() => router.replace({ pathname: '/rotulo', params: { barcode } })} />
       <Button label="Escanear outro" tone="ghost" style={{ marginTop: 10 }} onPress={() => router.replace('/scan')} />
     </View>
   );
@@ -226,6 +278,9 @@ const s = StyleSheet.create({
   name: { fontFamily: fonts.displayMid, fontSize: 22, lineHeight: 26, letterSpacing: -0.4, color: colors.ink, marginTop: 18 },
   brand: { fontFamily: fonts.body, fontSize: 14, color: colors.ink, opacity: 0.7, marginTop: 2 },
   content: { padding: 20, gap: 16 },
+  actions: { flexDirection: 'row', gap: 10 },
+  action: { flex: 1, paddingHorizontal: 12 },
+  altReason: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.leafDeep, paddingHorizontal: 6 },
   alertBox: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: radius.md },
   alertTitle: { fontFamily: fonts.bodyBold, fontSize: 16 },
   alertReason: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.ink },

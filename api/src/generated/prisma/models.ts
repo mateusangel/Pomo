@@ -11,4 +11,5 @@
 export type * from './models/Profile.js'
 export type * from './models/Product.js'
 export type * from './models/ScanHistory.js'
+export type * from './models/Favorite.js'
 export type * from './commonInputTypes.js'

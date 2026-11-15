@@ -1,11 +1,12 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
+import { ExplainCard } from '../../components/ExplainCard';
 import { ProductRow } from '../../components/ProductRow';
 import { StateView } from '../../components/State';
-import { H1 } from '../../components/ui';
+import { Chip, H1 } from '../../components/ui';
 import { apiErrorText, useAsync } from '../../data/hooks';
 
 export default function Historico() {
@@ -36,7 +37,19 @@ export default function Historico() {
       keyExtractor={(i) => `${i.product.barcode}-${i.scannedAt}`}
       contentContainerStyle={[s.page, { paddingTop: insets.top + 16 }]}
       ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-      ListHeaderComponent={<H1 style={{ marginBottom: 12 }}>Histórico</H1>}
+      ListHeaderComponent={
+        <View style={{ gap: 14, marginBottom: 12 }}>
+          <H1>Histórico</H1>
+          <View style={s.chips}>
+            <Chip label="Evolução" onPress={() => router.push('/evolucao')} />
+            <Chip label="Minha lista" onPress={() => router.push('/listas')} />
+            <Chip label="Comparar" onPress={() => router.push('/comparar')} />
+          </View>
+          {(history.data?.items.length ?? 0) > 0 && (
+            <ExplainCard request={{ module: 'historico' }} label="Pomo.ai, interprete meu histórico" />
+          )}
+        </View>
+      }
       renderItem={({ item }) => <ProductRow analysis={item.analysis} />}
       ListEmptyComponent={empty}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -46,4 +59,5 @@ export default function Historico() {
 
 const s = StyleSheet.create({
   page: { paddingHorizontal: 20, paddingBottom: 48 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
 });

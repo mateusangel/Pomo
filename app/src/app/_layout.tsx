@@ -90,6 +90,10 @@ function Routes() {
           <Stack.Screen name="produto/[barcode]" />
           <Stack.Screen name="search" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="chat" options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="comparar" />
+          <Stack.Screen name="evolucao" />
+          <Stack.Screen name="listas" />
+          <Stack.Screen name="rotulo" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         </Stack.Protected>
       </Stack>
       {showSplash && <BrandSplash />}

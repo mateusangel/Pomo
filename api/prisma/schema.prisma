@@ -38,7 +38,9 @@ model Product {
   verified        Boolean       @default(false)
   createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   scans           ScanHistory[]
+  favorites       Favorite[]
 
+  @@index([category])
   @@map("products")
 }
 
@@ -51,4 +53,15 @@ model ScanHistory {
 
   @@index([userId, scannedAt(sort: Desc)])
   @@map("scan_history")
+}
+
+model Favorite {
+  userId    String   @map("user_id") @db.Uuid
+  barcode   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  product   Product  @relation(fields: [barcode], references: [barcode])
+
+  @@id([userId, barcode])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("favorites")
 }

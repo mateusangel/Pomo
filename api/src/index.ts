@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { loadConfig } from './config.js';
-import { createGeminiChat } from './integrations/gemini.js';
+import { createGeminiChat, createGeminiVision } from './integrations/gemini.js';
 import { createOffLookup } from './integrations/off.js';
 import { createTokenVerifier } from './plugins/auth.js';
 import { createPrismaClient, createPrismaRepositories } from './repositories/prisma.js';
@@ -28,6 +28,10 @@ const app = buildServer({
     ...(config.GEMINI_API_KEY
       ? {
           chat: createGeminiChat({
+            apiKey: config.GEMINI_API_KEY,
+            ...(config.GEMINI_MODEL ? { model: config.GEMINI_MODEL } : {}),
+          }),
+          vision: createGeminiVision({
             apiKey: config.GEMINI_API_KEY,
             ...(config.GEMINI_MODEL ? { model: config.GEMINI_MODEL } : {}),
           }),
