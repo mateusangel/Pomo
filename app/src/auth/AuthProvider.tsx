@@ -3,6 +3,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { fragmentParams } from './urlParams';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -104,10 +105,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (result.type !== 'success') return { ok: false, cancelled: true, message: '' };
 
-    const parsed = Linking.parse(result.url);
-    const code = typeof parsed.queryParams?.code === 'string' ? parsed.queryParams.code : null;
+    // PKCE devolve `code` na query; em erros o Supabase pode usar a query ou o fragmento (#).
+    const params = { ...Linking.parse(result.url).queryParams, ...fragmentParams(result.url) };
+    const code = typeof params.code === 'string' ? params.code : null;
     if (!code) {
-      const desc = parsed.queryParams?.error_description;
+      const desc = params.error_description;
       return { ok: false, message: authMessage({ message: typeof desc === 'string' ? desc : '' }) };
     }
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
