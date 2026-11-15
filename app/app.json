@@ -35,7 +35,15 @@
           "cameraPermission": "O Pomo usa a câmera para ler o código de barras dos alimentos."
         }
       ],
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F4F5F1"
+        }
+      ],
       "expo-web-browser"
     ],
     "scheme": "pomo",

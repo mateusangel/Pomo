@@ -26,7 +26,13 @@ function AppleLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-/** "Continuar com Google" (e Apple no iOS). `onError` recebe a mensagem já em português. */
+/** Login com Google oculto por enquanto (o provedor ainda não está configurado). Mude para true para reexibir. */
+const GOOGLE_LOGIN_ENABLED = false;
+
+/** Há algum login social visível neste aparelho? Quem mostra o divisor "ou" consulta isto. */
+export const HAS_SOCIAL_LOGIN = GOOGLE_LOGIN_ENABLED || Platform.OS === 'ios';
+
+/** Login social (Google, e Apple no iOS). `onError` recebe a mensagem já em português. */
 export function SocialButtons({ onError }: { onError: (message: string | null) => void }) {
   const { signInWithProvider } = useAuth();
   const [busy, setBusy] = useState<SocialProvider | null>(null);
@@ -41,18 +47,22 @@ export function SocialButtons({ onError }: { onError: (message: string | null) =
     // Sucesso: o AuthProvider atualiza a sessão e o roteador leva para dentro do app.
   };
 
+  if (!HAS_SOCIAL_LOGIN) return null;
+
   return (
     <View style={s.col}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Continuar com Google"
-        disabled={!!busy}
-        onPress={() => go('google')}
-        style={({ pressed }) => [s.btn, s.google, pressed && { opacity: 0.85 }]}
-      >
-        {busy === 'google' ? <ActivityIndicator color={colors.ink} /> : <GoogleG />}
-        <Text style={[s.text, { color: colors.ink }]}>Continuar com Google</Text>
-      </Pressable>
+      {GOOGLE_LOGIN_ENABLED && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Continuar com Google"
+          disabled={!!busy}
+          onPress={() => go('google')}
+          style={({ pressed }) => [s.btn, s.google, pressed && { opacity: 0.85 }]}
+        >
+          {busy === 'google' ? <ActivityIndicator color={colors.ink} /> : <GoogleG />}
+          <Text maxFontSizeMultiplier={1.3} style={[s.text, { color: colors.ink }]}>Continuar com Google</Text>
+        </Pressable>
+      )}
 
       {Platform.OS === 'ios' && (
         <Pressable
@@ -82,7 +92,7 @@ export function OrDivider({ label = 'ou' }: { label?: string }) {
 
 const s = StyleSheet.create({
   col: { gap: 12 },
-  btn: { height: 56, borderRadius: radius.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  btn: { minHeight: 56, paddingVertical: 12, paddingHorizontal: 16, borderRadius: radius.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   google: { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.line },
   apple: { backgroundColor: colors.ink },
   text: { fontFamily: fonts.bodyBold, fontSize: 16 },

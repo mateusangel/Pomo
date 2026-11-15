@@ -1,13 +1,14 @@
 import { Link, router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { AuthShell } from '../../components/AuthShell';
 import { Field, type FieldHandle } from '../../components/Field';
 import { Icon } from '../../components/Icon';
-import { OrDivider, SocialButtons } from '../../components/SocialButtons';
+import { HAS_SOCIAL_LOGIN, OrDivider, SocialButtons } from '../../components/SocialButtons';
 import { Body, Button } from '../../components/ui';
 import { checkPassword, isEmail } from '../../lib/validation';
+import { loadPending } from '../../onboarding/storage';
 import { colors, fonts } from '../../theme';
 
 const STRENGTH_COLORS = [colors.danger, '#FCD34D', '#BEF264', colors.leaf] as const;
@@ -25,6 +26,13 @@ export default function Register() {
   const emailRef = useRef<FieldHandle>(null);
   const passwordRef = useRef<FieldHandle>(null);
 
+  // O nome digitado no onboarding (antes da conta) já vem preenchido.
+  useEffect(() => {
+    loadPending().then((p) => {
+      if (p?.name) setName((current) => current || p.name);
+    });
+  }, []);
+
   const strength = checkPassword(password);
   const nameError = touched && name.trim().length < 2 ? 'Como podemos te chamar?' : null;
   const emailError = touched && !isEmail(email) ? 'Digite um e-mail válido.' : null;
@@ -40,7 +48,7 @@ export default function Register() {
     setBusy(false);
     if (!result.ok) return setError(result.message);
     if (result.confirmEmail) setSentTo(email.trim());
-    // Sem confirmação de e-mail, a sessão já existe e o roteador segue para o onboarding.
+    // Sem confirmação de e-mail, a sessão já existe e o app segue para a tela principal.
   };
 
   if (sentTo) {
@@ -123,8 +131,12 @@ export default function Register() {
 
       <Button label={busy ? 'Criando conta…' : 'Criar conta'} disabled={busy} onPress={submit} />
 
-      <OrDivider />
-      <SocialButtons onError={setError} />
+      {HAS_SOCIAL_LOGIN && (
+        <>
+          <OrDivider />
+          <SocialButtons onError={setError} />
+        </>
+      )}
 
       <View style={s.footer}>
         <Text style={s.footerText}>Já tem conta? </Text>
@@ -145,7 +157,7 @@ const s = StyleSheet.create({
   termsText: { flex: 1, fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.ink },
   errorBox: { backgroundColor: colors.dangerSoft, borderRadius: 14, padding: 14 },
   errorText: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 20, color: colors.danger },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
+  footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 },
   footerText: { fontFamily: fonts.body, fontSize: 15, color: colors.mute },
   footerLink: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
 });

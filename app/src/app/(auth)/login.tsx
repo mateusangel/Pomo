@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { AuthShell } from '../../components/AuthShell';
 import { Field, type FieldHandle } from '../../components/Field';
-import { OrDivider, SocialButtons } from '../../components/SocialButtons';
+import { HAS_SOCIAL_LOGIN, OrDivider, SocialButtons } from '../../components/SocialButtons';
 import { Button } from '../../components/ui';
 import { isEmail } from '../../lib/validation';
 import { colors, fonts } from '../../theme';
@@ -72,8 +72,12 @@ export default function Login() {
 
       <Button label={busy ? 'Entrando…' : 'Entrar'} tone="ink" disabled={busy} onPress={submit} />
 
-      <OrDivider />
-      <SocialButtons onError={setError} />
+      {HAS_SOCIAL_LOGIN && (
+        <>
+          <OrDivider />
+          <SocialButtons onError={setError} />
+        </>
+      )}
 
       <View style={s.footer}>
         <Text style={s.footerText}>Ainda não tem conta? </Text>
@@ -89,7 +93,7 @@ const s = StyleSheet.create({
   forgot: { alignSelf: 'flex-end', fontFamily: fonts.bodyBold, fontSize: 14, color: colors.leafDeep, marginTop: -6 },
   errorBox: { backgroundColor: colors.dangerSoft, borderRadius: 14, padding: 14 },
   errorText: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 20, color: colors.danger },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
+  footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 },
   footerText: { fontFamily: fonts.body, fontSize: 15, color: colors.mute },
   footerLink: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
 });

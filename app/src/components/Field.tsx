@@ -21,6 +21,7 @@ export const Field = forwardRef<FieldHandle, FieldProps>(function Field({ label,
         <TextInput
           ref={ref}
           placeholderTextColor={colors.mute}
+          maxFontSizeMultiplier={1.3}
           autoCapitalize="none"
           autoCorrect={false}
           accessibilityLabel={label}
@@ -62,7 +63,7 @@ const s = StyleSheet.create({
   box: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
+    minHeight: 56,
     borderRadius: radius.md,
     backgroundColor: colors.card,
     borderWidth: 1.5,
@@ -72,7 +73,7 @@ const s = StyleSheet.create({
   },
   focused: { borderColor: colors.ink },
   errorBox: { borderColor: colors.danger },
-  input: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.ink, height: '100%' },
+  input: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.ink, paddingVertical: 12 },
   toggle: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.leafDeep },
   error: { fontFamily: fonts.body, fontSize: 13, color: colors.danger },
 });

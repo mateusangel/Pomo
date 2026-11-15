@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
   FadeInDown,
@@ -13,15 +13,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ApiError, api } from '../api/client';
 import type { AllergenId, ProfileData, RestrictionId } from '../api/types';
-import { useAuth } from '../auth/AuthProvider';
 import { Icon } from '../components/Icon';
 import { Pomo, type PomoMood } from '../components/Pomo';
 import { PomoBubble } from '../components/PomoBubble';
 import { Body, Button, Chip, H1 } from '../components/ui';
 import { ALLERGENS, GOALS, RESTRICTIONS, allergenLabel } from '../data/options';
-import { supabase } from '../lib/supabase';
+import { useOnboarding } from '../onboarding/OnboardingProvider';
+import { savePending } from '../onboarding/storage';
 import { colors, fonts, radius } from '../theme';
 
 type StepId = 'welcome' | 'name' | 'goals' | 'diet' | 'allergies' | 'care' | 'demo' | 'final';
@@ -31,11 +30,11 @@ const tap = () => Haptics.selectionAsync().catch(() => {});
 
 export default function Onboarding() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
-  const initialName = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : '';
+  const { width, height } = useWindowDimensions();
+  const { markSeen } = useOnboarding();
 
   const [step, setStep] = useState(0);
-  const [name, setName] = useState(initialName);
+  const [name, setName] = useState('');
   const [goals, setGoals] = useState<string[]>([]);
   const [diet, setDiet] = useState<RestrictionId | 'nenhuma'>('nenhuma');
   const [allergens, setAllergens] = useState<AllergenId[]>([]);
@@ -44,7 +43,6 @@ export default function Onboarding() {
   const [lessSodium, setLessSodium] = useState(false);
   const [consent, setConsent] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [bounce, setBounce] = useState(0);
 
   const id = STEPS[step]!;
@@ -75,17 +73,16 @@ export default function Onboarding() {
 
   const next = () => {
     tap();
-    setError(null);
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
   const back = () => {
-    setError(null);
     setStep((s) => Math.max(s - 1, 0));
   };
 
+  // O onboarding vem antes da conta: guarda as respostas no aparelho e envia à API depois do login.
   const finish = async () => {
+    if (saving) return;
     setSaving(true);
-    setError(null);
     const profile: ProfileData = {
       goals,
       allergens,
@@ -93,19 +90,17 @@ export default function Onboarding() {
       lessSugar,
       lessSodium,
     };
-    try {
-      await api.putProfile(profile, consent);
-      if (first && first !== initialName) await supabase.auth.updateUser({ data: { name: name.trim() } }).catch(() => {});
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      router.replace('/(tabs)');
-    } catch (e) {
-      setSaving(false);
-      setError(
-        e instanceof ApiError && e.status === 0
-          ? 'Não consegui falar com o servidor. Verifique sua internet e tente de novo.'
-          : 'Não deu para salvar agora. Tente de novo.',
-      );
-    }
+    await savePending({ name: name.trim(), profile, consent });
+    await markSeen();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    router.replace('/register');
+  };
+
+  // Quem já tem conta (ou reinstalou o app) pula direto para o login.
+  const skipToLogin = async () => {
+    tap();
+    await markSeen();
+    router.replace('/login');
   };
 
   // Mensagem e humor do Pomo em cada passo.
@@ -131,16 +126,31 @@ export default function Onboarding() {
   };
 
   if (id === 'welcome') {
+    // Tamanhos acompanham a tela: celulares pequenos, grandes, paisagem e tablets.
+    const mascot = Math.round(Math.min(Math.max(Math.min(width * 0.6, height * 0.3), 120), 260));
+    const titleSize = width < 360 ? 34 : width < 400 ? 38 : 44;
     return (
-      <View style={[s.hero, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
-        <Animated.View entering={FadeInDown.duration(600)} style={s.heroCenter}>
-          <Pomo size={240} mood="feliz" />
-        </Animated.View>
-        <Animated.View entering={FadeInDown.delay(250).duration(500)}>
-          <H1 style={s.heroTitle}>{first ? `Oi, ${first}!` : 'Oi!'}{'\n'}Veja o que tem{'\n'}no seu prato.</H1>
-          <Body style={s.heroSub}>Em 1 minuto montamos seu perfil. Depois é só escanear e receber nota e alertas.</Body>
-          <Button label="Vamos lá" tone="ink" onPress={next} />
-        </Animated.View>
+      <View
+        style={[
+          s.hero,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16, paddingLeft: Math.max(24, insets.left), paddingRight: Math.max(24, insets.right) },
+        ]}
+      >
+        <ScrollView contentContainerStyle={s.heroScroll} showsVerticalScrollIndicator={false} bounces={false}>
+          <Animated.View entering={FadeInDown.duration(600)} style={s.heroCenter}>
+            <Pomo size={mascot} mood="feliz" />
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(250).duration(500)}>
+            <H1 maxFontSizeMultiplier={1.2} style={[s.heroTitle, { fontSize: titleSize, lineHeight: titleSize + 2 }]}>
+              {first ? `Oi, ${first}!` : 'Oi!'}{'\n'}Veja o que tem{'\n'}no seu prato.
+            </H1>
+            <Body style={s.heroSub}>Em 1 minuto montamos seu perfil. Depois é só escanear e receber nota e alertas.</Body>
+            <Button label="Vamos lá" tone="ink" onPress={next} />
+            <Pressable accessibilityRole="button" hitSlop={8} onPress={skipToLogin} style={s.haveAccount}>
+              <Text style={s.haveAccountText}>Já tenho conta</Text>
+            </Pressable>
+          </Animated.View>
+        </ScrollView>
       </View>
     );
   }
@@ -276,7 +286,6 @@ export default function Onboarding() {
                   </Text>
                 </Pressable>
               )}
-              {!!error && <Text style={s.error}>{error}</Text>}
             </>
           )}
         </Animated.View>
@@ -285,7 +294,7 @@ export default function Onboarding() {
       <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
         {id === 'final' ? (
           <Button
-            label={saving ? 'Salvando…' : 'Entrar no Pomo'}
+            label={saving ? 'Salvando…' : 'Criar minha conta'}
             tone="leaf"
             disabled={!canContinue || saving}
             style={!canContinue || saving ? { opacity: 0.4 } : undefined}
@@ -433,11 +442,14 @@ function Demo() {
 }
 
 const s = StyleSheet.create({
-  hero: { flex: 1, backgroundColor: colors.leaf, paddingHorizontal: 24 },
-  heroCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  hero: { flex: 1, backgroundColor: colors.leaf },
+  heroScroll: { flexGrow: 1, width: '100%', maxWidth: 520, alignSelf: 'center' },
+  heroCenter: { flex: 1, minHeight: 140, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
+  haveAccount: { alignSelf: 'center', paddingVertical: 14 },
+  haveAccountText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, textDecorationLine: 'underline' },
   heroTitle: { fontSize: 44, lineHeight: 46, letterSpacing: -1.6, marginBottom: 12 },
   heroSub: { fontSize: 17, lineHeight: 24, marginBottom: 28, maxWidth: 340 },
-  screen: { flex: 1, backgroundColor: colors.paper },
+  screen: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center', backgroundColor: colors.paper },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 24, height: 44 },
   backBtn: { width: 28 },
   track: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.line, overflow: 'hidden' },
@@ -462,7 +474,6 @@ const s = StyleSheet.create({
   consent: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   box: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: colors.ink, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   consentText: { flex: 1, fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.ink },
-  error: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.danger },
   footer: { paddingHorizontal: 24, paddingTop: 12 },
   hint: { textAlign: 'center', marginTop: 10, fontSize: 13 },
   demoCard: { backgroundColor: colors.card, borderRadius: radius.lg, padding: 18, gap: 16 },

@@ -117,7 +117,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    // Escopo local: a sessão do aparelho é limpa sempre, mesmo sem rede ou com o servidor fora.
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } finally {
+      setSession(null);
+    }
   }, []);
 
   const value = useMemo<AuthContextValue>(

@@ -25,7 +25,7 @@ export function Button({
       {...rest}
       style={({ pressed }) => [s.btn, { backgroundColor: bg, opacity: pressed ? 0.85 : 1 }, tone === 'ghost' && s.ghost, style]}
     >
-      <Text style={[s.btnText, { color: fg }]}>{label}</Text>
+      <Text maxFontSizeMultiplier={1.3} style={[s.btnText, { color: fg, textAlign: 'center' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -51,7 +51,7 @@ const s = StyleSheet.create({
   h1: { fontFamily: fonts.display, fontSize: 34, lineHeight: 36, letterSpacing: -1, color: colors.ink },
   h2: { fontFamily: fonts.displayMid, fontSize: 20, lineHeight: 24, letterSpacing: -0.4, color: colors.ink },
   body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.ink },
-  btn: { height: 56, borderRadius: radius.xl, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
+  btn: { minHeight: 56, borderRadius: radius.xl, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12 },
   ghost: { borderWidth: 1.5, borderColor: colors.ink },
   btnText: { fontFamily: fonts.bodyBold, fontSize: 16 },
   chip: { paddingHorizontal: 16, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: colors.line, backgroundColor: colors.card, justifyContent: 'center' },
