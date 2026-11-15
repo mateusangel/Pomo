@@ -25,6 +25,8 @@ export function buildServer(opts: ServerOptions = {}): FastifyInstance {
   app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
 
   app.get('/health', async () => ({ ok: true }));
+  // Ping leve para cron externo (mantém o Render acordado); não toca no banco.
+  app.get('/ping', async () => ({ ok: true, pong: true }));
 
   if (opts.deps) registerV1Routes(app, opts.deps);
 
